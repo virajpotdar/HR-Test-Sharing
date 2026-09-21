@@ -1,0 +1,80 @@
+@import url('https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap');
+
+:root {
+  /* --- PALETTE: Enterprise ERP Style --- */
+  --bg-deep: #f0f2f5;
+  --bg-glass: rgba(255, 255, 255, 0.85);
+  --bg-panel: #ffffff;
+  
+  /* --- ACCENTS --- */
+  --accent-primary: #800000; /* Enterprise Sapphire Blue */
+  --accent-glow: rgba(128, 0, 0, 0.2);
+  --accent-gold: #d4af37; /* Royal Gold */
+  
+  /* --- TEXT --- */
+  --text-primary: #1e293b;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  
+  /* --- BORDERS --- */
+  --border-glass: rgba(0, 0, 0, 0.08);
+  --border-active: rgba(128, 0, 0, 0.5);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Satoshi', sans-serif;
+  background-color: var(--bg-deep);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+
+  /* --- ENTERPRISE BACKGROUND --- */
+  background-image: 
+    linear-gradient(rgba(128, 0, 0, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(128, 0, 0, 0.03) 1px, transparent 1px),
+    radial-gradient(circle at 50% 50%, rgba(240, 242, 245, 0) 0%, #f0f2f5 100%);
+  background-size: 40px 40px, 40px 40px, 100% 100%;
+  background-position: center;
+  background-attachment: fixed;
+}
+
+/* Glassmorphism Class */
+.glass {
+  background: var(--bg-glass);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-glass);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #0a0a0f;
+}
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-primary);
+}
+
+input, button, textarea, select {
+  font-family: 'Satoshi', sans-serif;
+}
+
+.mono {
+  font-family: 'Fira Code', monospace;
+}

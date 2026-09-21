@@ -1,7 +1,5 @@
 import AppController from "./core/AppController";
 
-function App() {
+export default function App() {
   return <AppController />;
 }
-
-export default App;
