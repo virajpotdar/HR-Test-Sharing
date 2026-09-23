@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { doc, getDoc, setDoc, serverTimestamp, collection, query, where, onSnapshot } from "firebase/firestore";
-import { db } from "../firebase";
 import { getAdminRequests } from "../services/apiService";
 
-export default function AdminDashboard({ onLogout, goQuestions, goResults, goRequests }) {
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:5000";
+
+export default function AdminDashboard({ admin, onLogout, goQuestions, goResults, goRequests, goUsers }) {
   const [startTime, setStartTime] = useState("");
   const [duration, setDuration] = useState(60);
   const [status, setStatus] = useState("scheduled");
@@ -13,17 +13,21 @@ export default function AdminDashboard({ onLogout, goQuestions, goResults, goReq
   const [activeDelayMinutes, setActiveDelayMinutes] = useState(5);
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
 
-  const ref = doc(db, "exam-config", "current-exam");
-
   useEffect(() => {
     async function load() {
-      const snap = await getDoc(ref);
-      if (snap.exists()) {
-        const d = snap.data();
-        setDuration(d.durationMinutes || 60);
-        setStatus(d.status || "scheduled");
-        if (d.startTime) setStartTime(d.startTime.toDate ? d.startTime.toDate().toISOString().slice(0, 16) : new Date(d.startTime).toISOString().slice(0, 16));
-        if (d.activeDelayMinutes !== undefined) setActiveDelayMinutes(d.activeDelayMinutes);
+      try {
+        // Load exam config from backend API
+        const configRes = await fetch(`${BACKEND_URL}/api/exam/config`);
+        const configData = await configRes.json();
+        if (configData.config) {
+          const c = configData.config;
+          setDuration(c.duration_minutes || 60);
+          setStatus(c.status || "scheduled");
+          if (c.start_time) setStartTime(new Date(c.start_time).toISOString().slice(0, 16));
+          if (c.active_delay_minutes !== undefined) setActiveDelayMinutes(c.active_delay_minutes);
+        }
+      } catch (err) {
+        console.warn("Failed to load config:", err.message);
       }
 
       // Check pending admin requests count
@@ -32,38 +36,55 @@ export default function AdminDashboard({ onLogout, goQuestions, goResults, goReq
     }
     load();
 
-    // LIVE STUDENT COUNTER
-    const sessionsRef = collection(db, "exam_sessions");
-    const q = query(sessionsRef, where("examId", "==", "common_test"));
-    
-    const unsubscribe = onSnapshot(sessionsRef, (snapshot) => {
-      const docs = snapshot.docs;
-      setTotalStudents(docs.length);
-      setActiveStudents(docs.filter(d => !d.data().submitted).length);
-    });
+    // LIVE STUDENT COUNTER via polling
+    async function pollSessions() {
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/admin/results`);
+        const data = await res.json();
+        const sessions = data.sessions || [];
+        setTotalStudents(sessions.length);
+        setActiveStudents(sessions.filter(s => s.status !== "Submitted").length);
+      } catch (err) {
+        console.warn("Failed to poll sessions:", err.message);
+      }
+    }
+    pollSessions();
+    const interval = setInterval(pollSessions, 10000); // Poll every 10 seconds
 
-    return () => unsubscribe();
+    return () => clearInterval(interval);
   }, []);
 
   async function saveConfig() {
     if (!startTime) return alert("Start time required");
     setSaving(true);
     
-    const configData = {
-      examId: "common_test",
-      startTime: new Date(startTime),
-      durationMinutes: Number(duration),
+    const configPayload = {
+      exam_id: "common_test",
+      start_time: new Date(startTime).toISOString(),
+      duration_minutes: Number(duration),
       status,
-      updatedAt: serverTimestamp(),
     };
 
     if (status === "active") {
-       configData.activeDelayMinutes = Number(activeDelayMinutes);
-       configData.activeStartTime = new Date(Date.now() + Number(activeDelayMinutes) * 60000);
+       configPayload.active_delay_minutes = Number(activeDelayMinutes);
+       configPayload.active_start_time = new Date(Date.now() + Number(activeDelayMinutes) * 60000).toISOString();
     }
 
-    await setDoc(ref, configData, { merge: true });
-    alert("Configuration Updated Successfully");
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/admin/config`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(configPayload)
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert("Configuration Updated Successfully");
+      } else {
+        alert("Failed to update: " + (data.error || "Unknown error"));
+      }
+    } catch (err) {
+      alert("Failed to update configuration: " + err.message);
+    }
     setSaving(false);
   }
 
@@ -147,11 +168,14 @@ export default function AdminDashboard({ onLogout, goQuestions, goResults, goReq
            <button style={btnNav} onClick={goResults}>
               <span style={icon}>📊</span> RESULTS & ANALYTICS
            </button>
-           <button style={{ ...btnNav, gridColumn: "span 2", position: "relative" }} onClick={goRequests}>
-              <span style={icon}>🔑</span> ADMIN ACCESS REQUESTS
+           <button style={{ ...btnNav, position: "relative" }} onClick={goRequests}>
+              <span style={icon}>🔑</span> ACCESS REQUESTS
               {pendingRequestsCount > 0 && (
                 <span style={requestBadge}>{pendingRequestsCount} PENDING</span>
               )}
+           </button>
+           <button style={btnNav} onClick={goUsers}>
+              <span style={icon}>👥</span> USER MANAGEMENT
            </button>
         </div>
       </div>

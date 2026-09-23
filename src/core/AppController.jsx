@@ -8,14 +8,15 @@ import AdminDashboard from "../admin/AdminDashboard";
 import AdminQuestions from "../admin/AdminQuestions";
 import AdminResults from "../admin/AdminResults";
 import AdminRequests from "../admin/AdminRequests";
-import { auth } from "../firebase";
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "../firebase";
+import AdminUsers from "../admin/AdminUsers";
+import ChangePassword from "../admin/ChangePassword";
 
 export default function AppController() {
   const [view, setView] = useState("WELCOME");
   const [student, setStudent] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [adminData, setAdminData] = useState(null);
+  const [tempPassword, setTempPassword] = useState(""); // for forced password change
 
   /* ---------- 🔒 SECURITY & NAVIGATION CONTROL ---------- */
   useEffect(() => {
@@ -58,19 +59,6 @@ export default function AppController() {
     };
   }, [isAdmin]);
 
-  /* ---------- ADMIN CHECK ---------- */
-  async function verifyAdmin() {
-    const user = auth.currentUser;
-    if (!user) return true; // Allow dashboard entry for testing / direct admin login
-
-    try {
-      const snap = await getDoc(doc(db, "admins", user.uid));
-      return snap.exists();
-    } catch {
-      return true;
-    }
-  }
-
   /* ---------- VIEW ROUTING ---------- */
   return (
     <>
@@ -90,31 +78,45 @@ export default function AppController() {
       {/* ---------- ADMIN FLOW ---------- */}
       {view === "ADMIN_LOGIN" && (
         <AdminLogin
-          onSuccess={async () => {
-            const ok = await verifyAdmin();
-            if (ok) {
-              setIsAdmin(true);
-              setView("ADMIN_DASHBOARD");
-            } else {
-              alert("Unauthorized admin access");
-              auth.signOut();
-              setView("WELCOME");
-            }
+          onSuccess={(admin) => {
+            setAdminData(admin);
+            setIsAdmin(true);
+            setView("ADMIN_DASHBOARD");
+          }}
+          onForceChangePassword={(admin, currentPassword) => {
+            setAdminData(admin);
+            setTempPassword(currentPassword);
+            setView("CHANGE_PASSWORD");
           }}
           onCancel={() => setView("WELCOME")}
         />
       )}
 
+      {view === "CHANGE_PASSWORD" && adminData && (
+        <ChangePassword
+          admin={adminData}
+          currentTempPassword={tempPassword}
+          onSuccess={(admin) => {
+            setAdminData(admin);
+            setIsAdmin(true);
+            setTempPassword("");
+            setView("ADMIN_DASHBOARD");
+          }}
+        />
+      )}
+
       {view === "ADMIN_DASHBOARD" && isAdmin && (
         <AdminDashboard
+          admin={adminData}
           onLogout={() => {
-            auth.signOut();
             setIsAdmin(false);
+            setAdminData(null);
             setView("WELCOME");
           }}
           goQuestions={() => setView("ADMIN_QUESTIONS")}
           goResults={() => setView("ADMIN_RESULTS")}
           goRequests={() => setView("ADMIN_REQUESTS")}
+          goUsers={() => setView("ADMIN_USERS")}
         />
       )}
 
@@ -128,6 +130,10 @@ export default function AppController() {
 
       {view === "ADMIN_REQUESTS" && isAdmin && (
         <AdminRequests onBack={() => setView("ADMIN_DASHBOARD")} />
+      )}
+
+      {view === "ADMIN_USERS" && isAdmin && (
+        <AdminUsers onBack={() => setView("ADMIN_DASHBOARD")} />
       )}
     </>
   );

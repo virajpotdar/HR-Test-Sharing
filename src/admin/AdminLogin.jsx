@@ -1,12 +1,11 @@
 import { useState } from "react";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../firebase";
-import { submitAdminRequest } from "../services/apiService";
+import { submitAdminRequest, adminLogin } from "../services/apiService";
 
-export default function AdminLogin({ onSuccess, onCancel }) {
+export default function AdminLogin({ onSuccess, onCancel, onForceChangePassword }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   // Request Access modal inside AdminLogin
   const [showReqModal, setShowReqModal] = useState(false);
@@ -20,11 +19,20 @@ export default function AdminLogin({ onSuccess, onCancel }) {
   async function handleLogin(e) {
     e.preventDefault();
     setError("");
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-      onSuccess();
-    } catch {
-      setError("Authorization Failed: Invalid Credentials");
+    setLoading(true);
+
+    const result = await adminLogin(email, password);
+    setLoading(false);
+
+    if (result.success) {
+      // Check if user must change password
+      if (result.must_change_password) {
+        onForceChangePassword(result.admin, password);
+      } else {
+        onSuccess(result.admin);
+      }
+    } else {
+      setError(result.error || "Login failed. Please try again.");
     }
   }
 
@@ -69,7 +77,7 @@ export default function AdminLogin({ onSuccess, onCancel }) {
           </div>
 
           <div style={group}>
-            <label style={label}>PASSCODE</label>
+            <label style={label}>PASSWORD</label>
             <input
               style={input}
               type="password"
@@ -82,7 +90,9 @@ export default function AdminLogin({ onSuccess, onCancel }) {
 
           {error && <div style={errBox}>{error}</div>}
 
-          <button style={btnPrimary}>AUTHENTICATE</button>
+          <button style={loading ? btnDisabled : btnPrimary} disabled={loading}>
+            {loading ? "AUTHENTICATING..." : "AUTHENTICATE"}
+          </button>
 
           <div style={linkRow}>
             <button type="button" style={btnLink} onClick={() => setShowReqModal(true)}>
@@ -105,6 +115,10 @@ export default function AdminLogin({ onSuccess, onCancel }) {
               <button style={btnClose} onClick={() => setShowReqModal(false)}>&times;</button>
             </div>
 
+            <p style={{ fontSize: "0.85rem", color: "#64748b", marginBottom: "20px" }}>
+              Submit your details to request administrative permissions to create tests, manage questions, and view candidate results.
+            </p>
+
             <form onSubmit={handleRequestSubmit}>
               <div style={group}>
                 <label style={label}>FULL NAME *</label>
@@ -115,11 +129,11 @@ export default function AdminLogin({ onSuccess, onCancel }) {
                 <input type="email" style={input} placeholder="hod.cs@college.edu.in" value={reqEmail} onChange={e => setReqEmail(e.target.value)} required />
               </div>
               <div style={group}>
-                <label style={label}>ORGANIZATION / COMPANY</label>
+                <label style={label}>ORGANIZATION / INSTITUTION</label>
                 <input style={input} placeholder="e.g. XYZ Engineering College" value={reqOrg} onChange={e => setReqOrg(e.target.value)} />
               </div>
               <div style={group}>
-                <label style={label}>REASON FOR REQUEST *</label>
+                <label style={label}>PURPOSE / REASON FOR ACCESS *</label>
                 <textarea style={textArea} placeholder="Explain why you need test administration access..." value={reqReason} onChange={e => setReqReason(e.target.value)} required />
               </div>
 
@@ -152,14 +166,14 @@ const group = { marginBottom: "20px" };
 const label = { display: "block", fontSize: "0.7rem", color: "#64748b", marginBottom: "8px", letterSpacing: "1px", fontWeight: "bold" };
 const input = { width: "100%", padding: "14px", background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "8px", color: "#1e293b", outline: "none" };
 const textArea = { ...input, height: "80px", resize: "vertical" };
-const errBox = { color: "#ef4444", fontSize: "0.85rem", marginBottom: "20px", textAlign: "center" };
-const btnPrimary = { width: "100%", padding: "14px", background: "#800000", color: "#1e293b", border: "none", borderRadius: "8px", fontSize: "0.9rem", fontWeight: "800", cursor: "pointer", marginBottom: "10px" };
+const errBox = { color: "#ef4444", fontSize: "0.85rem", marginBottom: "20px", textAlign: "center", background: "rgba(239,68,68,0.08)", padding: "10px", borderRadius: "8px", border: "1px solid rgba(239,68,68,0.2)" };
+const btnPrimary = { width: "100%", padding: "14px", background: "#800000", color: "#ffffff", border: "none", borderRadius: "8px", fontSize: "0.9rem", fontWeight: "800", cursor: "pointer", marginBottom: "10px" };
 const btnDisabled = { ...btnPrimary, background: "#1a1a1a", color: "#555", cursor: "not-allowed" };
 const btnGhost = { width: "100%", padding: "14px", background: "transparent", color: "#64748b", border: "none", cursor: "pointer", fontSize: "0.8rem" };
 const linkRow = { textAlign: "center", marginBottom: "15px" };
 const btnLink = { background: "transparent", border: "none", color: "#800000", fontSize: "0.85rem", cursor: "pointer", textDecoration: "underline" };
 
 const modalOverlay = { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0, 0, 0, 0.5)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000, backdropFilter: "blur(5px)" };
-const modalContent = { background: "#ffffff", padding: "30px", borderRadius: "20px", width: "450px", maxWidth: "90%", border: "1px solid rgba(255,255,255,0.1)" };
+const modalContent = { background: "#ffffff", padding: "30px", borderRadius: "20px", width: "450px", maxWidth: "90%", border: "1px solid rgba(255,255,255,0.1)", maxHeight: "90vh", overflowY: "auto" };
 const modalHeader = { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" };
 const btnClose = { background: "transparent", border: "none", color: "#1e293b", fontSize: "1.5rem", cursor: "pointer" };

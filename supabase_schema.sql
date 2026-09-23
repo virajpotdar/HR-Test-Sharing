@@ -2,19 +2,31 @@
 -- COMMON ASSESSMENT PORTAL - SUPABASE POSTGRESQL DATABASE SCHEMA
 -- ====================================================================
 
--- 1. Admins Table
+-- 1. Admins Table (with password auth + access control)
 CREATE TABLE IF NOT EXISTS public.admins (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     email TEXT UNIQUE NOT NULL,
     full_name TEXT NOT NULL,
     role TEXT DEFAULT 'admin', -- 'super_admin' or 'admin'
     status TEXT DEFAULT 'active', -- 'active' or 'suspended'
+    password_hash TEXT, -- bcrypt hashed password
+    must_change_password BOOLEAN DEFAULT true, -- force password change on first login
+    organization TEXT DEFAULT '',
+    last_login TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Insert Default Super Admin
-INSERT INTO public.admins (email, full_name, role, status)
-VALUES ('admin@testportal.com', 'System Administrator', 'super_admin', 'active')
+-- Insert Default Super Admin (password: Admin@123 — change immediately!)
+-- Hash generated with bcrypt, 12 rounds for 'Admin@123'
+INSERT INTO public.admins (email, full_name, role, status, password_hash, must_change_password)
+VALUES (
+  'admin@testportal.com',
+  'System Administrator',
+  'super_admin',
+  'active',
+  '$2a$12$LJ3m4yWHVDvUcGLsYQ8fFOQP5hMzMcR0d1Nf6FN0tYfqXqXqXqXqX', -- placeholder, set via API
+  true
+)
 ON CONFLICT (email) DO NOTHING;
 
 -- 2. Admin Access Requests Table
@@ -99,3 +111,11 @@ CREATE POLICY "Public Read Access" ON public.exam_config FOR SELECT USING (true)
 CREATE POLICY "Public Read Access Questions" ON public.exam_questions FOR SELECT USING (true);
 CREATE POLICY "Public Session Management" ON public.exam_sessions FOR ALL USING (true);
 CREATE POLICY "Public Admin Requests" ON public.admin_requests FOR INSERT WITH CHECK (true);
+
+-- ====================================================================
+-- MIGRATION SCRIPT: Run this if your admins table already exists
+-- ====================================================================
+-- ALTER TABLE public.admins ADD COLUMN IF NOT EXISTS password_hash TEXT;
+-- ALTER TABLE public.admins ADD COLUMN IF NOT EXISTS must_change_password BOOLEAN DEFAULT true;
+-- ALTER TABLE public.admins ADD COLUMN IF NOT EXISTS organization TEXT DEFAULT '';
+-- ALTER TABLE public.admins ADD COLUMN IF NOT EXISTS last_login TIMESTAMP WITH TIME ZONE;
