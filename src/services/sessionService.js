@@ -6,8 +6,7 @@ import {
   serverTimestamp,
   arrayUnion,
   increment,
-  runTransaction,
-  writeBatch
+  runTransaction
 } from "firebase/firestore";
 import { db } from "../firebase";
 

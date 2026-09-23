@@ -483,11 +483,6 @@ const thClickableRight = {
   textAlign: "right" 
 };
 
-const thRight = { 
-  ...th, 
-  textAlign: "right" 
-};
-
 const tRow = { 
   borderBottom: "1px solid rgba(255,255,255,0.03)", 
   transition: "background 0.1s" 

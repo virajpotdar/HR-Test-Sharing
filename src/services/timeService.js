@@ -1,5 +1,4 @@
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "../firebase";
+// Removed unused imports
 
 export async function getServerTime() {
   // 🟢 OPTIMIZATION: We return local time to prevent Database Lockup.

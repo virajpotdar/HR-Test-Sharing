@@ -171,16 +171,6 @@ const title = {
   margin: "0",
 };
 
-const badge = {
-  background: "rgba(239, 68, 68, 0.15)",
-  color: "#ef4444",
-  padding: "6px 12px",
-  borderRadius: "4px",
-  fontSize: "0.75rem",
-  fontWeight: "700",
-  letterSpacing: "1px",
-};
-
 const metaBox = {
   background: "rgba(255, 255, 255, 0.02)",
   borderRadius: "12px",
@@ -324,14 +314,6 @@ const dangerList = {
   paddingLeft: "20px",
   margin: "5px 0 10px 0",
   lineHeight: "1.4"
-};
-
-const dangerSub = {
-  color: "#ef4444",
-  fontSize: "0.75rem",
-  fontWeight: "bold",
-  fontStyle: "italic",
-  margin: 0
 };
 
 const rulesSection = {

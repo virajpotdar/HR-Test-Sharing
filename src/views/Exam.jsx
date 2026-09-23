@@ -7,17 +7,14 @@ import {
   initSession,
   activateSession,
   batchSaveAnswers,
-  submitSession,
   submitWithAnswers,
   addViolationWithSnapshot,
-  getSession,
 } from "../services/sessionService";
 import {
   saveExamProgress,
   loadExamProgress,
   clearExamProgress,
   saveUserInfo,
-  loadUserInfo,
   savePendingSubmission,
   loadPendingSubmission,
   clearPendingSubmission,
@@ -54,7 +51,7 @@ export default function Exam({ student }) {
   const [remaining, setRemaining] = useState(null);
   const [violations, setViolations] = useState(0);
   const [fullscreen, setFullscreen] = useState(true);
-  const [blocked, setBlocked] = useState(false);
+  const [blocked] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submitStatus, setSubmitStatus] = useState("standard");
@@ -104,6 +101,7 @@ export default function Exam({ student }) {
 
     // Save user info for persistence
     saveUserInfo(name, scholar);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /* ========================================
@@ -182,6 +180,7 @@ export default function Exam({ student }) {
         violationLock.current = false;
       }
     }, 1000);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId, submitted, blocked]);
 
   /* ========================================
@@ -365,6 +364,7 @@ export default function Exam({ student }) {
       }
     }
     startExamSession();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /* ========================================
@@ -415,6 +415,7 @@ export default function Exam({ student }) {
       clearInterval(interval);
       unsubscribe();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [blocked, submitted, startTime, durationMinutes]);
 
   /* ========================================
